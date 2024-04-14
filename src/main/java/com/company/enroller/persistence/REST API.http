@@ -1,0 +1,16 @@
+#POST http://localhost:8080/participants
+#Content-Type: application/json
+#
+#{
+#    "login": "user14",
+#    "password": "password"
+# }
+
+DELETE http://localhost:8080/participants
+Content-Type: application/json
+
+{
+"login": "user14",
+"password": "password"
+}
+
