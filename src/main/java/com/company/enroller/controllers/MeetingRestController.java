@@ -1,69 +1,70 @@
 package com.company.enroller.controllers;
 
-import com.company.enroller.model.Participant;
-import com.company.enroller.persistence.ParticipantService;
+import java.util.Collection;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collection;
+import com.company.enroller.model.Meeting;
+import com.company.enroller.persistence.MeetingService;
 
 @RestController
-@RequestMapping("/participants")
+@RequestMapping("/meetings")
 public class MeetingRestController {
 
 	@Autowired
-	ParticipantService participantService;
+	MeetingService meetingService;
 
 	@RequestMapping(value = "", method = RequestMethod.GET)
-	public ResponseEntity<?> getParticipants() {
-		Collection<Participant> participants = participantService.getAll();
-		return new ResponseEntity<Collection<Participant>>(participants, HttpStatus.OK);
+	public ResponseEntity<?> getMeetings() {
+		Collection<Meeting> meetings = meetingService.getAll();
+		return new ResponseEntity<Collection<Meeting>>(meetings, HttpStatus.OK);
 	}
 
 	@RequestMapping(value = "/{id}", method = RequestMethod.GET)
-	public ResponseEntity<?> getParticipant(@PathVariable("id") String login) {
-		Participant participant = participantService.findByLogin(login);
-		if (participant == null) {
+	public ResponseEntity<?> getMeeting(@PathVariable("id") long id) {
+		Meeting meeting = meetingService.findById(id);
+		if (meeting == null) {
 			return new ResponseEntity(HttpStatus.NOT_FOUND);
 		}
-		return new ResponseEntity<Participant>(participant, HttpStatus.OK);
+		return new ResponseEntity<Meeting>(meeting, HttpStatus.OK);
 	}
-
 
 	@RequestMapping(value = "", method = RequestMethod.POST)
-	public ResponseEntity<?> registerParticipant(@RequestBody Participant participant){
-		Participant foundParticipant = participantService.findByLogin(participant.getLogin());
-		if (foundParticipant != null) {
-			return new ResponseEntity("Unable to create. A participant with login " + participant.getLogin() + " already exist.", HttpStatus.CONFLICT);
+	public ResponseEntity<?> registerMeeting(@RequestBody Meeting meeting) {
+		if (meetingService.findById(meeting.getId()) != null) {
+			return new ResponseEntity("Unable to create. A meeting with id " + meeting.getId() + " already exists.", HttpStatus.CONFLICT);
 		}
-		participantService.add(participant);
-		return new ResponseEntity<Participant>(participant, HttpStatus.CREATED);
+		meetingService.add(meeting);
+		return new ResponseEntity<Meeting>(meeting, HttpStatus.CREATED);
 	}
 
-	@RequestMapping(value = "{id}", method = RequestMethod.DELETE)
-	public ResponseEntity<?> deleteParticipant(@PathVariable("id") String login) {
-		Participant participant = participantService.findByLogin(login);
-		participantService.delete(participant);
-		return new ResponseEntity<Participant>(participant, HttpStatus.OK);
+	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
+	public ResponseEntity<?> deleteMeeting(@PathVariable("id") long id) {
+		Meeting meeting = meetingService.findById(id);
+		if (meeting == null) {
+			return new ResponseEntity(HttpStatus.NOT_FOUND);
+		}
+		meetingService.delete(meeting);
+		return new ResponseEntity<Meeting>(meeting, HttpStatus.OK);
 	}
 
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
-	public ResponseEntity<?> updateParticipant(@PathVariable("id") String login, @RequestBody Participant updatedParticipant) {
-		Participant existingParticipant = participantService.findByLogin(login);
+	public ResponseEntity<?> updateMeeting(@PathVariable("id") long id, @RequestBody Meeting updatedMeeting) {
+		Meeting existingMeeting = meetingService.findById(id);
 
-		if (existingParticipant == null) {
-			return new ResponseEntity("Participant with login " + login + " not found.", HttpStatus.NOT_FOUND);
+		if (existingMeeting == null) {
+			return new ResponseEntity("Meeting with id " + id + " not found.", HttpStatus.NOT_FOUND);
 		}
 
-		existingParticipant.setLogin(updatedParticipant.getLogin());
-		existingParticipant.setPassword(updatedParticipant.getPassword());
+		existingMeeting.setTitle(updatedMeeting.getTitle());
+		existingMeeting.setDescription(updatedMeeting.getDescription());
+		existingMeeting.setDate(updatedMeeting.getDate());
 
-		//participantService.update(existingParticipant);
+		meetingService.update(existingMeeting);
 
-		return new ResponseEntity<Participant>(existingParticipant, HttpStatus.OK);
+		return new ResponseEntity<Meeting>(existingMeeting, HttpStatus.OK);
 	}
-
-
 }
