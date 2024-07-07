@@ -34,10 +34,10 @@ public class ParticipantRestController {
 
 
 	@RequestMapping(value = "", method = RequestMethod.POST)
-	public ResponseEntity<?> registerParticipant(@RequestBody Participant participant) {
+	public ResponseEntity<?> registerParticipant(@RequestBody Participant participant){
 		Participant foundParticipant = participantService.findByLogin(participant.getLogin());
 		if (foundParticipant != null) {
-			return new ResponseEntity("Unable to create", HttpStatus.CONFLICT);
+			return new ResponseEntity("Unable to create. A participant with login " + participant.getLogin() + " already exist.", HttpStatus.CONFLICT);
 		}
 		participantService.add(participant);
 		return new ResponseEntity<Participant>(participant, HttpStatus.CREATED);
@@ -50,6 +50,21 @@ public class ParticipantRestController {
 		return new ResponseEntity<Participant>(participant, HttpStatus.OK);
 	}
 
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
+	public ResponseEntity<?> updateParticipant(@PathVariable("id") String login, @RequestBody Participant updatedParticipant) {
+		Participant existingParticipant = participantService.findByLogin(login);
+
+		if (existingParticipant == null) {
+			return new ResponseEntity("Participant with login " + login + " not found.", HttpStatus.NOT_FOUND);
+		}
+
+		existingParticipant.setLogin(updatedParticipant.getLogin());
+		existingParticipant.setPassword(updatedParticipant.getPassword());
+
+		//participantService.update(existingParticipant);
+
+		return new ResponseEntity<Participant>(existingParticipant, HttpStatus.OK);
+	}
 
 
 }
