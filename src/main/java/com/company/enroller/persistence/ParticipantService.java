@@ -21,15 +21,37 @@ public class ParticipantService {
 		Query query = connector.getSession().createQuery(hql);
 		return query.list();
 	}
-	public Participant findByLogin(String login){
-		return connector.getSession().get(Participant.class,login);
+
+	public Collection<Participant> getAllSorted(String sortBy, String sortOrder) {
+		String hql = "FROM Participant ORDER BY " + sortBy + " " + sortOrder;
+		Query query = connector.getSession().createQuery(hql);
+		return query.list();
 	}
-	public void add(Participant participant){
+
+	public Collection<Participant> getAllFilteredAndSorted(String sortBy, String sortOrder, String key) {
+		String hql = "FROM Participant";
+		if (key != null && !key.isEmpty()) {
+			hql += " WHERE login LIKE :key";
+		}
+		hql += " ORDER BY " + sortBy + " " + sortOrder;
+		Query query = connector.getSession().createQuery(hql);
+		if (key != null && !key.isEmpty()) {
+			query.setParameter("key", "%" + key + "%");
+		}
+		return query.list();
+	}
+
+	public Participant findByLogin(String login) {
+		return connector.getSession().get(Participant.class, login);
+	}
+
+	public void add(Participant participant) {
 		Transaction transaction = connector.getSession().beginTransaction();
 		connector.getSession().save(participant);
 		transaction.commit();
 	}
-	public void delete(Participant participant){
+
+	public void delete(Participant participant) {
 		Transaction transaction = connector.getSession().beginTransaction();
 		connector.getSession().delete(participant);
 		transaction.commit();
