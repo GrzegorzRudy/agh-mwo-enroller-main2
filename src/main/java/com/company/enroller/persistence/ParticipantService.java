@@ -1,30 +1,39 @@
 package com.company.enroller.persistence;
 
-import java.util.Collection;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
-import org.springframework.stereotype.Component;
-
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 import com.company.enroller.model.Participant;
 
-@Component("participantService")
-public class ParticipantService {
+import java.util.ArrayList;
+import java.util.Collection;
 
-	DatabaseConnector connector;
+@Service("participantService")
+public class ParticipantService implements UserDetailsService {
+
+	private final DatabaseConnector connector;
+
+	@Autowired
+	private PasswordEncoder passwordEncoder;
 
 	public ParticipantService() {
-		connector = DatabaseConnector.getInstance();
+		this.connector = DatabaseConnector.getInstance();
 	}
 
 	public Collection<Participant> getAll() {
 		String hql = "FROM Participant";
-		Query query = connector.getSession().createQuery(hql);
+		Query<Participant> query = connector.getSession().createQuery(hql, Participant.class);
 		return query.list();
 	}
 
 	public Collection<Participant> getAllSorted(String sortBy, String sortOrder) {
 		String hql = "FROM Participant ORDER BY " + sortBy + " " + sortOrder;
-		Query query = connector.getSession().createQuery(hql);
+		Query<Participant> query = connector.getSession().createQuery(hql, Participant.class);
 		return query.list();
 	}
 
@@ -34,7 +43,7 @@ public class ParticipantService {
 			hql += " WHERE login LIKE :key";
 		}
 		hql += " ORDER BY " + sortBy + " " + sortOrder;
-		Query query = connector.getSession().createQuery(hql);
+		Query<Participant> query = connector.getSession().createQuery(hql, Participant.class);
 		if (key != null && !key.isEmpty()) {
 			query.setParameter("key", "%" + key + "%");
 		}
@@ -46,14 +55,36 @@ public class ParticipantService {
 	}
 
 	public void add(Participant participant) {
+		String hashedPassword = passwordEncoder.encode(participant.getPassword());
+		participant.setPassword(hashedPassword);
+
 		Transaction transaction = connector.getSession().beginTransaction();
-		connector.getSession().save(participant);
-		transaction.commit();
+		try {
+			connector.getSession().save(participant);
+			transaction.commit();
+		} catch (Exception e) {
+			transaction.rollback();
+			throw e; // rethrow exception after rollback
+		}
 	}
 
 	public void delete(Participant participant) {
 		Transaction transaction = connector.getSession().beginTransaction();
-		connector.getSession().delete(participant);
-		transaction.commit();
+		try {
+			connector.getSession().delete(participant);
+			transaction.commit();
+		} catch (Exception e) {
+			transaction.rollback();
+			throw e; // rethrow exception after rollback
+		}
+	}
+
+	@Override
+	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+		Participant participant = findByLogin(username);
+		if (participant == null) {
+			throw new UsernameNotFoundException("User not found: " + username);
+		}
+		return new org.springframework.security.core.userdetails.User(participant.getLogin(), participant.getPassword(), new ArrayList<>());
 	}
 }
